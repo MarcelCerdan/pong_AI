@@ -40,8 +40,8 @@ class PongEnv(gym.Env):
 
 		self._action_to_direction = {
 			0: np.array([0.0, 0.0], dtype=np.float64),
-			1: np.array([0.0, 1.0], dtype=np.float64),
-			2: np.array([0.0, -1.0], dtype=np.float64)
+			1: np.array([0.0, 0.15], dtype=np.float64),
+			2: np.array([0.0, -0.15], dtype=np.float64)
 		}
 
 		assert render_mode is None or render_mode in self.metadata["render_modes"]
@@ -139,7 +139,7 @@ class PongEnv(gym.Env):
 		if self.window is None and self.render_mode == "human":
 			pygame.init()
 			pygame.display.init()
-			self.window = pygame.display.set_mode((800, 600))
+			self.window = pygame.display.set_mode((800, 800))
 			if self.clock is None and self.render_mode == "human":
 				self.clock = pygame.time.Clock()
 			
@@ -148,13 +148,13 @@ class PongEnv(gym.Env):
 			
 
 			# Draw player1
-			pygame.draw.rect(canvas, (0, 255, 0), (0, 290, 10, 50))
+			pygame.draw.rect(canvas, (0, 255, 0), (0, 400, 10, 50))
 
 			# Draw agent
-			pygame.draw.rect(canvas, (255, 0, 0), (790, 290, 10, 50))
+			pygame.draw.rect(canvas, (255, 0, 0), (790, 400, 10, 50))
 
 			# Draw ball
-			pygame.draw.circle(canvas, (0, 0, 0), (400, 305), 5)
+			pygame.draw.circle(canvas, (0, 0, 0), (400, 400), 5)
 
 			if self.render_mode == "human":
 				self.window.blit(canvas, canvas.get_rect())
