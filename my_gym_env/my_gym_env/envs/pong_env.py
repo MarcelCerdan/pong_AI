@@ -6,27 +6,28 @@ from gymnasium import spaces
 from gymnasium.envs.registration import register
 
 class PongEnv(gym.Env):
-	metadata = {"render_modes": ["human", "rgb_array"]}
+	metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 30}
 
 	def __init__(self, render_mode=None):
+		self.window_size = (800, 600)
 		# Observations are dictionnaries with 3 keys: player1, agent, ball wich contains the coordinates of the player1,
 		# agent and ball + velocity of the ball
 		self.observation_space = spaces.Dict(
 			{
 				"player1": spaces.Dict(
 				{
-					"position": spaces.Box(low=-np.inf, high=np.inf, shape=(1, 1), dtype=float),
-					"score": spaces.Box(low=0, high=10, shape=(1,), dtype=int)
+					"position": spaces.Box(low=-np.inf, high=np.inf, shape=(1, 1), dtype=np.float64),
+					"score": spaces.Box(low=0, high=10, shape=(1,), dtype=np.int32)
 				}),
 				"agent": spaces.Dict(
 				{
-					"position": spaces.Box(low=-np.inf, high=np.inf, shape=(1, 1), dtype=float),
-					"score": spaces.Box(low=0, high=10, shape=(1,), dtype=int)
+					"position": spaces.Box(low=-np.inf, high=np.inf, shape=(1, 1), dtype=np.float64),
+					"score": spaces.Box(low=0, high=10, shape=(1,), dtype=np.int32)
 				}),
 				"ball": spaces.Dict(
 				{
-					"position": spaces.Box(low=-np.inf, high=np.inf, shape=(1, 1), dtype=float),
-					"velocity": spaces.Box(low=-np.inf, high=np.inf, shape=(1, 1), dtype=float)
+					"position": spaces.Box(low=-np.inf, high=np.inf, shape=(1, 1), dtype=np.float64),
+					"velocity": spaces.Box(low=-np.inf, high=np.inf, shape=(1, 1), dtype=np.float64)
 				})
 			}
 		)
@@ -35,12 +36,12 @@ class PongEnv(gym.Env):
 		self.action_space = spaces.Discrete(3)
 
 		self._action_to_direction = {
-			0: np.array([0, 0]),
-			1: np.array([0, 1]),
-			2: np.array([0, -1])
+			0: np.array([0.0, 0.0]),
+			1: np.array([0.0, 1.0]),
+			2: np.array([0.0, -1.0])
 		}
 
-		assert render_mode is None or render_mode in self.metadata["render.modes"]
+		assert render_mode is None or render_mode in self.metadata["render_modes"]
 		self.render_mode = render_mode
 
 		self.window = None
@@ -50,36 +51,39 @@ class PongEnv(gym.Env):
 		return {
 			"player1": 
 			{
-				"position": np.array([self.player1_pos]),
-				"score": self.player1_score
+				"position": self._player1_location,
+				"score": self._player1_score
 			},
 			"agent":
 			{
-				"position": np.array([self.agent_pos]),
-				"score": self.agent_score
+				"position": self._agent_location,
+				"score": self._agent_score
 			},
 			"ball": 
 			{
-				"position": np.array([self.ball_pos]),
-				"velocity": np.array([self.ball_velocity])
+				"position": self._ball_location,
+				"velocity": self._ball_velocity
 			}
 		}
 	
 	def reset(self, seed=None, options=None):
+		super().reset(seed=seed)
+
 		# Initialize positions, scores and ball velocity
-		self._agent_location = {0.8, 0}
+		self._agent_location = np.array([0.8, 0.0])
 		self._agent_score = 0
-		self._player1_location = {-0.8, 0}
+		self._player1_location = np.array([-0.8, 0.0])
 		self._player1_score = 0
-		self._ball_location = {0, 0}
-		self._ball_velocity = {0.055, 0}
+		self._ball_location = np.array([0.0, 0.0])
+		self._ball_velocity = np.array([0.055, 0.0])
 
 		observation = self._get_observation()
+		info = {}
 
 		if self.render_mode == "human":
 			self._render_frame()
 
-		return observation
+		return observation, info
 
 	def step(self, action):
 		reward = 0
@@ -120,6 +124,8 @@ class PongEnv(gym.Env):
 	
 	def render(self):
 		if self.render_mode == "rgb_array":
+			return self._render_frame()
+		elif self.render_mode == "human":
 			self._render_frame()
 
 	def _render_frame(self):
@@ -134,13 +140,13 @@ class PongEnv(gym.Env):
 			canvas.fill((255, 255, 255))
 			
 			# Draw player1
-			pygame.draw.rect(canvas, (0, 255, 0), (0, 0, 10, 100))
+			pygame.draw.rect(canvas, (0, 255, 0), (0, 290, 10, 50))
 
 			# Draw agent
-			pygame.draw.rect(canvas, (255, 0, 0), (790, 0, 10, 100))
+			pygame.draw.rect(canvas, (255, 0, 0), (790, 290, 10, 50))
 
 			# Draw ball
-			pygame.draw.circle(canvas, (255, 255, 255), (400, 300), 10)
+			pygame.draw.circle(canvas, (0, 0, 0), (400, 300), 5)
 
 			if self.render_mode == "human":
 				self.window.blit(canvas, canvas.get_rect())
