@@ -16,29 +16,32 @@ class PongEnv(gym.Env):
 			{
 				"player1": spaces.Dict(
 				{
-					"position": spaces.Box(low=-np.inf, high=np.inf, shape=(1, 1), dtype=np.float64),
-					"score": spaces.Box(low=0, high=10, shape=(1,), dtype=np.int32)
+					"position": spaces.Box(-10.0, 10.0, shape=(1, 1), dtype=np.float64),
+					"score": spaces.Box(0, 10, shape=(1,), dtype=np.int32)
 				}),
 				"agent": spaces.Dict(
 				{
-					"position": spaces.Box(low=-np.inf, high=np.inf, shape=(1, 1), dtype=np.float64),
-					"score": spaces.Box(low=0, high=10, shape=(1,), dtype=np.int32)
+					"position": spaces.Box(-10.0, 10.0, shape=(1, 1), dtype=np.float64),
+					"score": spaces.Box(0, 10, shape=(1,), dtype=np.int32)
 				}),
 				"ball": spaces.Dict(
 				{
-					"position": spaces.Box(low=-np.inf, high=np.inf, shape=(1, 1), dtype=np.float64),
-					"velocity": spaces.Box(low=-np.inf, high=np.inf, shape=(1, 1), dtype=np.float64)
+					"position": spaces.Box(-10.0, 10.0, shape=(1, 1), dtype=np.float64),
+					"velocity": spaces.Box(-10.0, 10.0, shape=(1, 1), dtype=np.float64)
 				})
 			}
 		)
+
+		self._borders_up = 6.48369
+		self._border_down = -6.48369
 
 		# We have 3 actions: move up, move down, do nothing
 		self.action_space = spaces.Discrete(3)
 
 		self._action_to_direction = {
-			0: np.array([0.0, 0.0]),
-			1: np.array([0.0, 1.0]),
-			2: np.array([0.0, -1.0])
+			0: np.array([0.0, 0.0], dtype=np.float64),
+			1: np.array([0.0, 1.0], dtype=np.float64),
+			2: np.array([0.0, -1.0], dtype=np.float64)
 		}
 
 		assert render_mode is None or render_mode in self.metadata["render_modes"]
@@ -86,9 +89,10 @@ class PongEnv(gym.Env):
 		return observation, info
 
 	def step(self, action):
+		terminated = False
 		reward = 0
 		# Update player1 position
-		self._player1_location += self._action_to_direction[action]
+		self._agent_location += self._action_to_direction[action]
 
 		# Update agent position
 		if self._ball_location[1] > self._agent_location[1]:
@@ -116,11 +120,14 @@ class PongEnv(gym.Env):
 			self._ball_velocity = {-0.055, 0}
 
 		observation = self._get_observation()
+		info = {}
+		if (self._player1_score == 10 or self._agent_score == 10):
+			terminated = True
 
 		if self.render_mode == "human":
 			self._render_frame()
 
-		return observation, reward, False, {}
+		return observation, reward, terminated, False, info
 	
 	def render(self):
 		if self.render_mode == "rgb_array":
@@ -139,6 +146,7 @@ class PongEnv(gym.Env):
 			canvas = pygame.Surface(self.window.get_size())
 			canvas.fill((255, 255, 255))
 			
+
 			# Draw player1
 			pygame.draw.rect(canvas, (0, 255, 0), (0, 290, 10, 50))
 
@@ -146,7 +154,7 @@ class PongEnv(gym.Env):
 			pygame.draw.rect(canvas, (255, 0, 0), (790, 290, 10, 50))
 
 			# Draw ball
-			pygame.draw.circle(canvas, (0, 0, 0), (400, 300), 5)
+			pygame.draw.circle(canvas, (0, 0, 0), (400, 305), 5)
 
 			if self.render_mode == "human":
 				self.window.blit(canvas, canvas.get_rect())

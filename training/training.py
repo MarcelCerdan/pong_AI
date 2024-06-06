@@ -1,12 +1,13 @@
 import PIL.Image
 import gymnasium as gym
 import my_gym_env
-from gym.utils.env_checker import check_env
+from gymnasium.utils.env_checker import check_env
 from time import sleep
 
 env = gym.make("PongEnv-v0", render_mode="human")
-env.reset()
+obs, inf = env.reset()
+print(obs)
 sleep(3)
-env.step(1)
+obs = env.step(1)
+print(obs)
 sleep(3)
-# check_env(env.unwrapped)
