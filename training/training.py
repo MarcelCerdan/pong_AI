@@ -7,6 +7,7 @@ from time import sleep
 actions = [0,0]
 env = gym.make("PongEnv-v0", render_mode="human")
 obs, inf = env.reset()
+print(obs)
 while True:
 	obs = env.step(actions)
 	# print(obs)

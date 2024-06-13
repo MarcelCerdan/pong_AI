@@ -16,12 +16,12 @@ class PongEnv(gym.Env):
 			{
 				"agent1": spaces.Dict(
 				{
-					"position": spaces.Box(-10.0, 10.0, shape=(2,), dtype=np.float64),
+					"position": spaces.Box(-10, 10, shape=(2,), dtype=np.float64),
 					"score": spaces.Box(0, 10, shape=(1,), dtype=np.int32)
 				}),
 				"agent2": spaces.Dict(
 				{
-					"position": spaces.Box(-10.0, 10.0, shape=(2,), dtype=np.float64),
+					"position": spaces.Box(-10, 10, shape=(2,), dtype=np.float64),
 					"score": spaces.Box(0, 10, shape=(1,), dtype=np.int32)
 				}),
 				"ball": spaces.Dict(
