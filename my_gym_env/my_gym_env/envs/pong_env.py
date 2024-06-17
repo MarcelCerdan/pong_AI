@@ -6,7 +6,8 @@ from gymnasium import spaces
 from gymnasium.envs.registration import register
 
 class PongEnv(gym.Env):
-	metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 30}
+	ACTION_SPACE_SIZE = 3
+	metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 1000}
 
 	def __init__(self, render_mode=None):
 		self.window_size = (1600, 1200)
@@ -52,7 +53,7 @@ class PongEnv(gym.Env):
 
 	def _get_observation(self):
 		return {
-			"agent1": 
+			"agent1":
 			{
 				"position": np.array(self._agent1_location, dtype=np.float64),
 				"score": np.array([self._agent1_score], dtype=np.int32)
@@ -101,13 +102,13 @@ class PongEnv(gym.Env):
 		if self._ball_location[0] >= 12:
 			reward = -1
 			self._agent1_score += 1
-			self._ball_location = {0, 0}
-			self._ball_velocity = {0.055, 0}
+			self._ball_location = np.array([0, 0], dtype=np.float64)
+			self._ball_velocity = np.array([0.055, 0], dtype=np.float64)
 		elif self._ball_location[0] <= -12:
 			reward = 1
 			self._agent2_score += 1
-			self._ball_location = {0, 0}
-			self._ball_velocity = {-0.055, 0}
+			self._ball_location = np.array([0, 0], dtype=np.float64)
+			self._ball_velocity = np.array([-0.055, 0], dtype=np.float64)
 		return reward
 		
 
@@ -123,7 +124,7 @@ class PongEnv(gym.Env):
 		self._agent2_location = np.array([9.5, 0.0])
 		self._agent2_score = 0
 		self._ball_location = np.array([0.0, 0.0])
-		self._ball_velocity = np.array([0.055, 0.0])
+		self._ball_velocity = np.array([-0.055, 0.0])
 
 		observation = self._get_observation()
 		info = {}
@@ -155,14 +156,13 @@ class PongEnv(gym.Env):
 		if (self._agent1_score == 10 or self._agent2_score == 10):
 			terminated = True
 		self._move_ball()
-		print("Ball location: ", self._ball_location)
 
 		observation = self._get_observation()
 		info = {}
 		if self.render_mode == "human":
 			self._render_frame()
 
-		return observation, reward, terminated, False, info
+		return (observation, reward, terminated, False, info)
 	
 	def render(self):
 		if self.render_mode == "rgb_array":
