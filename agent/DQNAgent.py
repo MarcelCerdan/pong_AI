@@ -23,7 +23,7 @@ MIN_REWARD = -200  # For model save
 MEMORY_FRACTION = 0.20
 
 # Environment settings
-EPISODES = 20_000
+EPISODES = 1_000
 
 # Exploration settings
 epsilon = 1  # not a constant, going to be decayed
@@ -31,7 +31,7 @@ EPSILON_DECAY = 0.99975
 MIN_EPSILON = 0.001
 
 #  Stats settings
-AGGREGATE_STATS_EVERY = 50  # episodes
+AGGREGATE_STATS_EVERY = 15  # episodes
 SHOW_PREVIEW = False
 
 class ModifiedTensorBoard(TensorBoard):
@@ -69,16 +69,19 @@ class ModifiedTensorBoard(TensorBoard):
 				self.writer.flush()
 
 class DQNAgent:
-	def __init__(self):
+	def __init__(self, model_name=None):
 		#main model => gets trained every steps
-		self.model = self.create_model()
+		if model_name == None:
+			self.model = self.create_model()
+		else:
+			self.model = tf.keras.models.load_model("models/" + model_name + ".keras")
 
 		#target model => this is what we .predict against every step
 		self.target_model = self.create_model()
 		self.target_model.set_weights(self.model.get_weights())
 
 		self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
-		self.tensorboard = ModifiedTensorBoard(log_dir=f"logs/{MODEL_NAME}-{int(time.time())}")
+		# self.tensorboard = ModifiedTensorBoard(log_dir=f"logs/{MODEL_NAME}-{int(time.time())}")
 		self.target_update_counter = 0
 
 	def _convert_to_np(self, state):
@@ -135,7 +138,7 @@ class DQNAgent:
 			X.append(current_state)
 			y.append(current_qs)
 		
-		self.model.fit(np.array(X), np.array(y), batch_size=MIN_REPLAY_MEMORY_SIZE, verbose=0, shuffle=False, callbacks=[self.tensorboard] if terminal_state else None)
+		self.model.fit(np.array(X), np.array(y), batch_size=MIN_REPLAY_MEMORY_SIZE, verbose=0, shuffle=False) #, callbacks=[self.tensorboard] if terminal_state else None)
 
 		if terminal_state:
 			self.target_update_counter += 1
@@ -145,8 +148,8 @@ class DQNAgent:
 			self.target_update_counter = 0
 
 # For stats
-ep_rewards_agent1 = [-200]
-ep_rewards_agent2 = [-200]
+ep_rewards_agent1 = [0]
+ep_rewards_agent2 = [0]
 
 # For more repetitive results
 # random.seed(1)
@@ -158,8 +161,8 @@ ep_rewards_agent2 = [-200]
 #backend.set_session(tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)))
 
 # Create models folder
-if not os.path.isdir('models'):
-    os.makedirs('models')
+if not os.path.isdir('models_2'):
+    os.makedirs('models_2')
 
 env = gym.make("PongEnv-v0")
 agent1 = DQNAgent()
@@ -169,8 +172,8 @@ agent2 = DQNAgent()
 for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
 
     # Update tensorboard step every episode
-    agent1.tensorboard.step = episode
-    agent2.tensorboard.step = episode
+    # agent1.tensorboard.step = episode
+    # agent2.tensorboard.step = episode
 
     # Restarting episode - reset episode reward and step number
     episode_reward_agent1 = 0
@@ -219,20 +222,20 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
         average_reward = sum(ep_rewards_agent1[-AGGREGATE_STATS_EVERY:])/len(ep_rewards_agent1[-AGGREGATE_STATS_EVERY:])
         min_reward = min(ep_rewards_agent1[-AGGREGATE_STATS_EVERY:])
         max_reward = max(ep_rewards_agent1[-AGGREGATE_STATS_EVERY:])
-        agent1.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward, epsilon=epsilon)
+        # agent1.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward, epsilon=epsilon)
         # Save model, but only when min reward is greater or equal a set value
         if min_reward >= MIN_REWARD:
-            agent1.model.save(f'models/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras')
+            agent1.model.save(f'models_2/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.h5')
     
     ep_rewards_agent2.append(episode_reward_agent2)
     if not episode % AGGREGATE_STATS_EVERY or episode == 1:
         average_reward = sum(ep_rewards_agent2[-AGGREGATE_STATS_EVERY:])/len(ep_rewards_agent2[-AGGREGATE_STATS_EVERY:])
         min_reward = min(ep_rewards_agent2[-AGGREGATE_STATS_EVERY:])
         max_reward = max(ep_rewards_agent2[-AGGREGATE_STATS_EVERY:])
-        agent2.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward, epsilon=epsilon)
+        # agent2.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward, epsilon=epsilon)
         # Save model, but only when min reward is greater or equal a set value
         if min_reward >= MIN_REWARD:
-            agent2.model.save(f'models/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras')
+            agent2.model.save(f'models_2/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.h5')
 
     # Decay epsilon
     if epsilon > MIN_EPSILON:
