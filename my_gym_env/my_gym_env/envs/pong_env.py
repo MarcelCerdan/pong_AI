@@ -153,12 +153,8 @@ class PongEnv(gym.Env):
 		reward = self._check_if_scored()
 		if reward != 0:
 			print("Reward: ", reward)
-		if (self._agent1_score == 3 or self._agent2_score == 3):
+		if (reward != 0):
 			terminated = True
-			if self._agent1_score == 3:
-				reward = 5
-			else:
-				reward = -5
 		self._move_ball()
 
 		observation = self._get_observation()

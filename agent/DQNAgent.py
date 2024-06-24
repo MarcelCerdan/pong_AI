@@ -1,4 +1,5 @@
 import tensorflow as tf
+import tensorflowjs as tfjs
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
@@ -14,12 +15,12 @@ import time
 import random
 
 DISCOUNT = 0.99
-REPLAY_MEMORY_SIZE = 50_000  # How many last steps to keep for model training
-MIN_REPLAY_MEMORY_SIZE = 1_000  # Minimum number of steps in a memory to start training
-MINIBATCH_SIZE = 64  # How many steps (samples) to use for training
+REPLAY_MEMORY_SIZE = 1000  # How many last steps to keep for model training
+MIN_REPLAY_MEMORY_SIZE = 50  # Minimum number of steps in a memory to start training
+MINIBATCH_SIZE = 30  # How many steps (samples) to use for training
 UPDATE_TARGET_EVERY = 5  # Terminal states (end of episodes)
 MODEL_NAME = 'first_pong_model'
-MIN_REWARD = -200  # For model save
+MIN_REWARD = -5  # For model save
 MEMORY_FRACTION = 0.20
 
 # Environment settings
@@ -31,8 +32,8 @@ EPSILON_DECAY = 0.99975
 MIN_EPSILON = 0.001
 
 #  Stats settings
-AGGREGATE_STATS_EVERY = 15  # episodes
-SHOW_PREVIEW = False
+AGGREGATE_STATS_EVERY = 10  # episodes
+SHOW_PREVIEW = True
 
 class ModifiedTensorBoard(TensorBoard):
 
@@ -185,6 +186,7 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
 
     # Reset flag and start iterating until episode ends
     done = False
+    print("Episode: ", episode)
     while not done:
 
         # This part stays mostly the same, the change is to query a model for Q values
@@ -201,16 +203,16 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
         new_state, reward, done, trunc, info = env.step(action)
 
         # Transform new continous state to new discrete state and count reward
-        episode_reward_agent1 += reward
-        episode_reward_agent2 += (reward * -1)
+        episode_reward_agent1 += (reward * -1)
+        episode_reward_agent2 += reward
 
         if SHOW_PREVIEW and not episode % AGGREGATE_STATS_EVERY:
             env.render()
 
         # Every step we update replay memory and train main network
-        agent1.update_replay_memory((current_state, action, reward, new_state, done))
+        agent1.update_replay_memory((current_state, action, reward * -1, new_state, done))
         agent1.train(done, step)
-        agent2.update_replay_memory((current_state, action, reward * -1, new_state, done))
+        agent2.update_replay_memory((current_state, action, reward, new_state, done))
         agent2.train(done, step)
 
         current_state = new_state
@@ -225,7 +227,8 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
         # agent1.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward, epsilon=epsilon)
         # Save model, but only when min reward is greater or equal a set value
         if min_reward >= MIN_REWARD:
-            agent1.model.save(f'models_2/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.h5')
+            agent1.model.save(f'models_2/agent1_{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras')
+            tfjs.converters.save_keras_model(agent1.model, "models_2/agent1_" + MODEL_NAME)
     
     ep_rewards_agent2.append(episode_reward_agent2)
     if not episode % AGGREGATE_STATS_EVERY or episode == 1:
@@ -235,7 +238,8 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
         # agent2.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward, epsilon=epsilon)
         # Save model, but only when min reward is greater or equal a set value
         if min_reward >= MIN_REWARD:
-            agent2.model.save(f'models_2/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.h5')
+            agent2.model.save(f'models_2/agent2_{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras')
+            tfjs.converters.save_keras_model(agent2.model, "models_2/agent2_" + MODEL_NAME)
 
     # Decay epsilon
     if epsilon > MIN_EPSILON:
