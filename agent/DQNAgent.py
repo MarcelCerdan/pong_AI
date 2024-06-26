@@ -163,8 +163,8 @@ if not os.path.isdir('models_3'):
     os.makedirs('models_3')
 
 env = gym.make("PongEnv-v0")
-agent1 = DQNAgent()
-agent2 = DQNAgent()
+agent1 = DQNAgent("agent1_first_pong_model_____1.00max____0.00avg___-1.00min__1719411265")
+agent2 = DQNAgent("agent2_first_pong_model_____1.00max____0.00avg___-1.00min__1719411267")
 
 # Iterate over episodes
 for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
