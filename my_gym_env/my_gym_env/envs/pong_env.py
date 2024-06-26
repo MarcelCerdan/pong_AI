@@ -15,15 +15,9 @@ class PongEnv(gym.Env):
 		# agent and ball + velocity of the ball
 		self.observation_space = spaces.Dict(
 			{
-				"agent1": spaces.Dict(
+				"agent": spaces.Dict(
 				{
 					"position": spaces.Box(-10, 10, shape=(2,), dtype=np.float64),
-					"score": spaces.Box(0, 10, shape=(1,), dtype=np.int32)
-				}),
-				"agent2": spaces.Dict(
-				{
-					"position": spaces.Box(-10, 10, shape=(2,), dtype=np.float64),
-					"score": spaces.Box(0, 10, shape=(1,), dtype=np.int32)
 				}),
 				"ball": spaces.Dict(
 				{
@@ -52,25 +46,10 @@ class PongEnv(gym.Env):
 		self.clock = None
 
 	def _get_observation(self, name="agent2"):
-		if name == "agent1":
 			return {
 				"agent":
 				{
 					"position": np.array(self._agent1_location, dtype=np.float64),
-					"score": np.array([self._agent1_score], dtype=np.int32)
-				},
-				"ball": 
-				{
-					"position": np.array(self._ball_location, dtype=np.float64),
-					"velocity": np.array(self._ball_velocity, dtype=np.float64)
-				}
-			}
-		else:
-			return {
-				"agent":
-				{
-					"position": np.array(self._agent2_location, dtype=np.float64),
-					"score": np.array([self._agent2_score], dtype=np.int32)
 				},
 				"ball": 
 				{
@@ -100,10 +79,10 @@ class PongEnv(gym.Env):
 			self._ball_velocity[1] = 0.08 * (self._ball_location[1] - self._agent1_location[1])
 
 	def _collides_with_border(self):
-		if self._ball_velocity[1] > 0 and self._ball_location[1] >= self._border_up:
-			self._ball_velocity[1] = -self._ball_velocity[1]
-		elif self._ball_velocity[1] < 0 and self._ball_location[1] <= self._border_down:
-			self._ball_velocity[1] = -self._ball_velocity[1]
+		if self._ball_velocity[0] > 0 and self._ball_location[1] >= self._border_up:
+			self._ball_velocity[0] += 0.02
+		elif self._ball_velocity[0] < 0 and self._ball_location[1] <= self._border_down:
+			self._ball_velocity[0] -= 0.02
 		self._ball_velocity[1] *= -1
 
 	def _check_if_scored(self):
@@ -124,7 +103,7 @@ class PongEnv(gym.Env):
 	def _move_ball(self):
 		self._ball_location += self._ball_velocity
 
-	def reset(self, name="agent2", seed=None, options=None):
+	def reset(self, seed=None, options=None):
 		super().reset(seed=seed)
 
 		# Initialize positions, scores and ball velocity
@@ -135,7 +114,7 @@ class PongEnv(gym.Env):
 		self._ball_location = np.array([0.0, 0.0])
 		self._ball_velocity = np.array([-0.055, 0.0])
 
-		observation = self._get_observation(name)
+		observation = self._get_observation()
 		info = {}
 
 		if self.render_mode == "human":
@@ -143,7 +122,7 @@ class PongEnv(gym.Env):
 
 		return observation, info
 
-	def step(self, action, name="agent2"):
+	def step(self, action):
 		terminated = False
 		
 		action1, action2 = action
@@ -166,7 +145,7 @@ class PongEnv(gym.Env):
 			terminated = True
 		self._move_ball()
 
-		observation = self._get_observation(name)
+		observation = self._get_observation()
 		info = {}
 		if self.render_mode == "human":
 			self._render_frame()

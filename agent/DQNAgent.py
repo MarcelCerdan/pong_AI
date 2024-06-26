@@ -33,7 +33,7 @@ MIN_EPSILON = 0.001
 
 #  Stats settings
 AGGREGATE_STATS_EVERY = 10  # episodes
-SHOW_PREVIEW = True
+SHOW_PREVIEW = False
 
 class ModifiedTensorBoard(TensorBoard):
 
@@ -75,7 +75,7 @@ class DQNAgent:
 		if model_name == None:
 			self.model = self.create_model()
 		else:
-			self.model = tf.keras.models.load_model("models_2/" + model_name + ".keras")
+			self.model = tf.keras.models.load_model("models_3/" + model_name + ".keras")
 
 		#target model => this is what we .predict against every step
 		self.target_model = self.create_model()
@@ -87,17 +87,14 @@ class DQNAgent:
 
 	def _convert_to_np(self, state):
 		return np.concatenate([
-            state['agent1']['position'],
-            state['agent1']['score'],
-            state['agent2']['position'],
-            state['agent2']['score'],
+			state['agent']['position'],
             state['ball']['position'],
             state['ball']['velocity']
         ]).astype(np.float32)
     
 	def create_model(self):
 		model = Sequential()
-		model.add(Dense(24, input_shape=(10,), activation='relu'))
+		model.add(Dense(24, input_shape=(6,), activation='relu'))
 		model.add(Dense(24, activation='relu'))
 		model.add(Dense(3, activation='linear'))
 		model.compile(loss='mse', optimizer=Adam(learning_rate=0.001))
@@ -109,7 +106,7 @@ class DQNAgent:
 
 	def get_qs(self, state):
 		state_np = self._convert_to_np(state)
-		return self.target_model.predict(state_np.reshape(-1, *state_np.shape))[0]
+		return self.target_model.predict(state_np.reshape(-1, *state_np.shape), verbose=0)[0]
     
 	def train(self, terminal_state, step):
 		if len(self.replay_memory) < MIN_REPLAY_MEMORY_SIZE:
@@ -118,7 +115,7 @@ class DQNAgent:
 		minibatch = random.sample(self.replay_memory, MINIBATCH_SIZE)
             
 		current_states = np.array([transition[0] for transition in minibatch])
-		current_qs_list = self.model.predict(current_states)
+		current_qs_list = self.model.predict(current_states, verbose=0)
             
 		new_current_states = np.array([transition[3] for transition in minibatch])
 		future_qs_list = self.target_model.predict(new_current_states)
@@ -162,16 +159,17 @@ ep_rewards_agent2 = [0]
 #backend.set_session(tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)))
 
 # Create models folder
-if not os.path.isdir('models_2'):
-    os.makedirs('models_2')
+if not os.path.isdir('models_3'):
+    os.makedirs('models_3')
 
 env = gym.make("PongEnv-v0")
-agent1 = DQNAgent("agent1_first_pong_model_____1.00max___-0.20avg___-1.00min__1719318490")
-agent2 = DQNAgent("agent2_first_pong_model_____1.00max___-0.20avg___-1.00min__1719320010")
+agent1 = DQNAgent()
+agent2 = DQNAgent()
 
 # Iterate over episodes
 for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
 
+    print("Episode: ", episode)
     # Update tensorboard step every episode
     # agent1.tensorboard.step = episode
     # agent2.tensorboard.step = episode
@@ -186,7 +184,6 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
 
     # Reset flag and start iterating until episode ends
     done = False
-    print("Episode: ", episode)
     while not done:
 
         # This part stays mostly the same, the change is to query a model for Q values
@@ -227,8 +224,8 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
         # agent1.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward, epsilon=epsilon)
         # Save model, but only when min reward is greater or equal a set value
         if min_reward >= MIN_REWARD:
-            agent1.model.save(f'models_2/agent1_{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras')
-            tfjs.converters.save_keras_model(agent1.model, f'models_2/agent1_{average_reward:_>7.2f}avg_')
+            agent1.model.save(f'models_3/agent1_{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras')
+            tfjs.converters.save_keras_model(agent1.model, f'models_3/agent1_{average_reward:_>7.2f}avg_')
     
     ep_rewards_agent2.append(episode_reward_agent2)
     if not episode % AGGREGATE_STATS_EVERY or episode == 1:
@@ -238,8 +235,8 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
         # agent2.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward, epsilon=epsilon)
         # Save model, but only when min reward is greater or equal a set value
         if min_reward >= MIN_REWARD:
-            agent2.model.save(f'models_2/agent2_{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras')
-            tfjs.converters.save_keras_model(agent2.model, f'models_2/agent2_{average_reward:_>7.2f}avg_')
+            agent2.model.save(f'models_3/agent2_{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras')
+            tfjs.converters.save_keras_model(agent2.model, f'models_3/agent2_{average_reward:_>7.2f}avg_')
 
     # Decay epsilon
     if epsilon > MIN_EPSILON:
