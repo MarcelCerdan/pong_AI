@@ -16,11 +16,11 @@ import random
 
 DISCOUNT = 0.99
 REPLAY_MEMORY_SIZE = 1000  # How many last steps to keep for model training
-MIN_REPLAY_MEMORY_SIZE = 50  # Minimum number of steps in a memory to start training
+MIN_REPLAY_MEMORY_SIZE = 30  # Minimum number of steps in a memory to start training
 MINIBATCH_SIZE = 30  # How many steps (samples) to use for training
 UPDATE_TARGET_EVERY = 5  # Terminal states (end of episodes)
 MODEL_NAME = 'first_pong_model'
-MIN_REWARD = -5  # For model save
+MIN_REWARD = -1  # For model save
 MEMORY_FRACTION = 0.20
 
 # Environment settings
@@ -75,7 +75,7 @@ class DQNAgent:
 		if model_name == None:
 			self.model = self.create_model()
 		else:
-			self.model = tf.keras.models.load_model("models/" + model_name + ".keras")
+			self.model = tf.keras.models.load_model("models_2/" + model_name + ".keras")
 
 		#target model => this is what we .predict against every step
 		self.target_model = self.create_model()
@@ -109,7 +109,7 @@ class DQNAgent:
 
 	def get_qs(self, state):
 		state_np = self._convert_to_np(state)
-		return self.model.predict(state_np.reshape(-1, *state_np.shape))[0]
+		return self.target_model.predict(state_np.reshape(-1, *state_np.shape))[0]
     
 	def train(self, terminal_state, step):
 		if len(self.replay_memory) < MIN_REPLAY_MEMORY_SIZE:
@@ -166,8 +166,8 @@ if not os.path.isdir('models_2'):
     os.makedirs('models_2')
 
 env = gym.make("PongEnv-v0")
-agent1 = DQNAgent()
-agent2 = DQNAgent()
+agent1 = DQNAgent("agent1_first_pong_model_____1.00max___-0.20avg___-1.00min__1719318490")
+agent2 = DQNAgent("agent2_first_pong_model_____1.00max___-0.20avg___-1.00min__1719320010")
 
 # Iterate over episodes
 for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
@@ -228,7 +228,7 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
         # Save model, but only when min reward is greater or equal a set value
         if min_reward >= MIN_REWARD:
             agent1.model.save(f'models_2/agent1_{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras')
-            tfjs.converters.save_keras_model(agent1.model, "models_2/agent1_" + MODEL_NAME)
+            tfjs.converters.save_keras_model(agent1.model, f'models_2/agent1_{average_reward:_>7.2f}avg_')
     
     ep_rewards_agent2.append(episode_reward_agent2)
     if not episode % AGGREGATE_STATS_EVERY or episode == 1:
@@ -239,7 +239,7 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
         # Save model, but only when min reward is greater or equal a set value
         if min_reward >= MIN_REWARD:
             agent2.model.save(f'models_2/agent2_{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras')
-            tfjs.converters.save_keras_model(agent2.model, "models_2/agent2_" + MODEL_NAME)
+            tfjs.converters.save_keras_model(agent2.model, f'models_2/agent2_{average_reward:_>7.2f}avg_')
 
     # Decay epsilon
     if epsilon > MIN_EPSILON:

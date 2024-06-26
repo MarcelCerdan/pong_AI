@@ -51,24 +51,33 @@ class PongEnv(gym.Env):
 		self.window = None
 		self.clock = None
 
-	def _get_observation(self):
-		return {
-			"agent1":
-			{
-				"position": np.array(self._agent1_location, dtype=np.float64),
-				"score": np.array([self._agent1_score], dtype=np.int32)
-			},
-			"agent2":
-			{
-				"position": np.array(self._agent2_location, dtype=np.float64),
-				"score": np.array([self._agent2_score], dtype=np.int32)
-			},
-			"ball": 
-			{
-				"position": np.array(self._ball_location, dtype=np.float64),
-				"velocity": np.array(self._ball_velocity, dtype=np.float64)
+	def _get_observation(self, name="agent2"):
+		if name == "agent1":
+			return {
+				"agent":
+				{
+					"position": np.array(self._agent1_location, dtype=np.float64),
+					"score": np.array([self._agent1_score], dtype=np.int32)
+				},
+				"ball": 
+				{
+					"position": np.array(self._ball_location, dtype=np.float64),
+					"velocity": np.array(self._ball_velocity, dtype=np.float64)
+				}
 			}
-		}
+		else:
+			return {
+				"agent":
+				{
+					"position": np.array(self._agent2_location, dtype=np.float64),
+					"score": np.array([self._agent2_score], dtype=np.int32)
+				},
+				"ball": 
+				{
+					"position": np.array(self._ball_location, dtype=np.float64),
+					"velocity": np.array(self._ball_velocity, dtype=np.float64)
+				}
+			}
 	
 	def _check_collision_with_paddles(self):
 		if self._ball_location[0] >= self._agent2_location[0] and self._ball_location[0] <= self._agent2_location[0] + 0.5:
@@ -115,7 +124,7 @@ class PongEnv(gym.Env):
 	def _move_ball(self):
 		self._ball_location += self._ball_velocity
 
-	def reset(self, seed=None, options=None):
+	def reset(self, name="agent2", seed=None, options=None):
 		super().reset(seed=seed)
 
 		# Initialize positions, scores and ball velocity
@@ -126,7 +135,7 @@ class PongEnv(gym.Env):
 		self._ball_location = np.array([0.0, 0.0])
 		self._ball_velocity = np.array([-0.055, 0.0])
 
-		observation = self._get_observation()
+		observation = self._get_observation(name)
 		info = {}
 
 		if self.render_mode == "human":
@@ -134,7 +143,7 @@ class PongEnv(gym.Env):
 
 		return observation, info
 
-	def step(self, action):
+	def step(self, action, name="agent2"):
 		terminated = False
 		
 		action1, action2 = action
@@ -157,7 +166,7 @@ class PongEnv(gym.Env):
 			terminated = True
 		self._move_ball()
 
-		observation = self._get_observation()
+		observation = self._get_observation(name)
 		info = {}
 		if self.render_mode == "human":
 			self._render_frame()
