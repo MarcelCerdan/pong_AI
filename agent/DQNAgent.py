@@ -20,7 +20,7 @@ MIN_REPLAY_MEMORY_SIZE = 30  # Minimum number of steps in a memory to start trai
 MINIBATCH_SIZE = 30  # How many steps (samples) to use for training
 UPDATE_TARGET_EVERY = 5  # Terminal states (end of episodes)
 MODEL_NAME = 'first_pong_model'
-MIN_REWARD = -1  # For model save
+MIN_REWARD = -10  # For model save
 MEMORY_FRACTION = 0.20
 
 # Environment settings
@@ -163,8 +163,8 @@ if not os.path.isdir('models_3'):
     os.makedirs('models_3')
 
 env = gym.make("PongEnv-v0")
-agent1 = DQNAgent("agent1_first_pong_model_____1.00max____0.00avg___-1.00min__1719411265")
-agent2 = DQNAgent("agent2_first_pong_model_____1.00max____0.00avg___-1.00min__1719411267")
+agent1 = DQNAgent("agent1_first_pong_model_____1.00max___-0.60avg___-1.00min__1719478137")
+agent2 = DQNAgent("agent2_first_pong_model_____4.00max____2.00avg____0.00min__1719478704")
 
 # Iterate over episodes
 for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):

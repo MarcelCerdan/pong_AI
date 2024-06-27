@@ -112,7 +112,11 @@ class PongEnv(gym.Env):
 		self._agent2_location = np.array([9.5, 0.0])
 		self._agent2_score = 0
 		self._ball_location = np.array([0.0, 0.0])
-		self._ball_velocity = np.array([-0.055, 0.0])
+		random = np.random.RandomState(seed)
+		if random.rand() < 0.5:
+			self._ball_velocity = np.array([0.055, 0.0])
+		else:
+			self._ball_velocity = np.array([-0.055, 0.0])
 
 		observation = self._get_observation()
 		info = {}
@@ -141,7 +145,7 @@ class PongEnv(gym.Env):
 		reward = self._check_if_scored()
 		if reward != 0:
 			print("Reward: ", reward)
-		if (reward != 0):
+		if (self._agent1_score == 5 or self._agent2_score == 5):
 			terminated = True
 		self._move_ball()
 
