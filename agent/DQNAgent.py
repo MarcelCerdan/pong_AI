@@ -82,7 +82,7 @@ class DQNAgent:
 		self.target_model.set_weights(self.model.get_weights())
 
 		self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
-		# self.tensorboard = ModifiedTensorBoard(log_dir=f"logs/{MODEL_NAME}-{int(time.time())}")
+		self.tensorboard = ModifiedTensorBoard(log_dir=f"logs/{MODEL_NAME}-{int(time.time())}")
 		self.target_update_counter = 0
 
 	def _convert_to_np(self, state):
@@ -146,8 +146,7 @@ class DQNAgent:
 			self.target_update_counter = 0
 
 # For stats
-ep_rewards_agent1 = [0]
-ep_rewards_agent2 = [0]
+ep_rewards = [0]
 
 # For more repetitive results
 # random.seed(1)
@@ -159,24 +158,21 @@ ep_rewards_agent2 = [0]
 #backend.set_session(tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)))
 
 # Create models folder
-if not os.path.isdir('models_3'):
-    os.makedirs('models_3')
+if not os.path.isdir('models_4'):
+    os.makedirs('models_4')
 
-env = gym.make("PongEnv-v0")
-agent1 = DQNAgent("agent1_first_pong_model_____1.00max___-0.60avg___-1.00min__1719478137")
-agent2 = DQNAgent("agent2_first_pong_model_____4.00max____2.00avg____0.00min__1719478704")
+env = gym.make("PongEnv-v0", render_mode="human")
+agent = DQNAgent()
 
 # Iterate over episodes
 for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
 
     print("Episode: ", episode)
     # Update tensorboard step every episode
-    # agent1.tensorboard.step = episode
-    # agent2.tensorboard.step = episode
+    agent.tensorboard.step = episode
 
     # Restarting episode - reset episode reward and step number
-    episode_reward_agent1 = 0
-    episode_reward_agent2 = 0
+    episode_reward = 0
     step = 1
 
     # Reset environment and get initial state
@@ -186,57 +182,54 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
     done = False
     while not done:
 
+        print("Ball location: ", current_state['ball']['position'])
+        print("Ball velocity: ", current_state['ball']['velocity'])
+        print("Agent location: ", current_state['agent']['position'])
         # This part stays mostly the same, the change is to query a model for Q values
         if np.random.random() > epsilon:
             # Get action from Q table
-            action1 = np.argmax(agent1.get_qs(current_state))
-            action2 = np.argmax(agent2.get_qs(current_state))
+            action = np.argmax(agent.get_qs(current_state))
         else:
             # Get random action
-            action1 = np.random.randint(0, env.unwrapped.ACTION_SPACE_SIZE)
-            action2 = np.random.randint(0, env.unwrapped.ACTION_SPACE_SIZE)
+            action = np.random.randint(0, env.unwrapped.ACTION_SPACE_SIZE)
 
-        action = [action1, action2]
         new_state, reward, done, trunc, info = env.step(action)
 
         # Transform new continous state to new discrete state and count reward
-        episode_reward_agent1 += (reward * -1)
-        episode_reward_agent2 += reward
+        episode_reward += reward
 
         if SHOW_PREVIEW and not episode % AGGREGATE_STATS_EVERY:
             env.render()
 
         # Every step we update replay memory and train main network
-        agent1.update_replay_memory((current_state, action, reward * -1, new_state, done))
-        agent1.train(done, step)
-        agent2.update_replay_memory((current_state, action, reward, new_state, done))
-        agent2.train(done, step)
+        agent.update_replay_memory((current_state, action, reward, new_state, done))
+        agent.train(done, step)
 
         current_state = new_state
         step += 1
 
     # Append episode reward to a list and log stats (every given number of episodes)
-    ep_rewards_agent1.append(episode_reward_agent1)
+    ep_rewards.append(episode_reward)
     if not episode % AGGREGATE_STATS_EVERY or episode == 1:
-        average_reward = sum(ep_rewards_agent1[-AGGREGATE_STATS_EVERY:])/len(ep_rewards_agent1[-AGGREGATE_STATS_EVERY:])
-        min_reward = min(ep_rewards_agent1[-AGGREGATE_STATS_EVERY:])
-        max_reward = max(ep_rewards_agent1[-AGGREGATE_STATS_EVERY:])
+        average_reward = sum(ep_rewards[-AGGREGATE_STATS_EVERY:])/len(ep_rewards[-AGGREGATE_STATS_EVERY:])
+        min_reward = min(ep_rewards[-AGGREGATE_STATS_EVERY:])
+        max_reward = max(ep_rewards[-AGGREGATE_STATS_EVERY:])
         # agent1.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward, epsilon=epsilon)
         # Save model, but only when min reward is greater or equal a set value
         if min_reward >= MIN_REWARD:
-            agent1.model.save(f'models_3/agent1_{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras')
-            tfjs.converters.save_keras_model(agent1.model, f'models_3/agent1_{average_reward:_>7.2f}avg_')
+            agent.model.save(f'models_4/agent_{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras')
+            tfjs.converters.save_keras_model(agent.model, f'models_3/agent_{average_reward:_>7.2f}avg_')
     
-    ep_rewards_agent2.append(episode_reward_agent2)
-    if not episode % AGGREGATE_STATS_EVERY or episode == 1:
-        average_reward = sum(ep_rewards_agent2[-AGGREGATE_STATS_EVERY:])/len(ep_rewards_agent2[-AGGREGATE_STATS_EVERY:])
-        min_reward = min(ep_rewards_agent2[-AGGREGATE_STATS_EVERY:])
-        max_reward = max(ep_rewards_agent2[-AGGREGATE_STATS_EVERY:])
-        # agent2.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward, epsilon=epsilon)
-        # Save model, but only when min reward is greater or equal a set value
-        if min_reward >= MIN_REWARD:
-            agent2.model.save(f'models_3/agent2_{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras')
-            tfjs.converters.save_keras_model(agent2.model, f'models_3/agent2_{average_reward:_>7.2f}avg_')
+    # ep_rewards_agent2.append(episode_reward_agent2)
+    # if not episode % AGGREGATE_STATS_EVERY or episode == 1:
+    #     average_reward = sum(ep_rewards_agent2[-AGGREGATE_STATS_EVERY:])/len(ep_rewards_agent2[-AGGREGATE_STATS_EVERY:])
+    #     min_reward = min(ep_rewards_agent2[-AGGREGATE_STATS_EVERY:])
+    #     max_reward = max(ep_rewards_agent2[-AGGREGATE_STATS_EVERY:])
+    #     # agent2.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward, epsilon=epsilon)
+    #     # Save model, but only when min reward is greater or equal a set value
+    #     if min_reward >= MIN_REWARD:
+    #         agent2.model.save(f'models_3/agent2_{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras')
+    #         tfjs.converters.save_keras_model(agent2.model, f'models_3/agent2_{average_reward:_>7.2f}avg_')
 
     # Decay epsilon
     if epsilon > MIN_EPSILON:
